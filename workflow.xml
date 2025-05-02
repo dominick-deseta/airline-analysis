@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow-app xmlns="uri:oozie:workflow:0.4" name="airline-analysis-workflow">
+    <global>
+        <job-tracker>${jobTracker}</job-tracker>
+        <name-node>${nameNode}</name-node>
+    </global>
+
+    <start to="airline-analysis"/>
+
+    <action name="airline-analysis">
+        <map-reduce>
+            <job-xml>job.properties</job-xml>
+            <configuration>
+                <property>
+                    <name>mapred.mapper.class</name>
+                    <value>com.airline.AirlineOnTimeJob$AirlineMapper</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.class</name>
+                    <value>com.airline.AirlineOnTimeJob$AirlineReducer</value>
+                </property>
+                <property>
+                    <name>mapred.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapred.output.value.class</name>
+                    <value>org.apache.hadoop.io.DoubleWritable</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>${inputDir}</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>${outputDir}/airline-analysis</value>
+                </property>
+            </configuration>
+        </map-reduce>
+        <ok to="taxi-analysis"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="taxi-analysis">
+        <map-reduce>
+            <job-xml>job.properties</job-xml>
+            <configuration>
+                <property>
+                    <name>mapred.mapper.class</name>
+                    <value>com.airline.AirportTaxiTimeJob$TaxiTimeMapper</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.class</name>
+                    <value>com.airline.AirportTaxiTimeJob$TaxiTimeReducer</value>
+                </property>
+                <property>
+                    <name>mapred.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapred.output.value.class</name>
+                    <value>org.apache.hadoop.io.DoubleWritable</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>${inputDir}</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>${outputDir}/taxi-analysis</value>
+                </property>
+            </configuration>
+        </map-reduce>
+        <ok to="cancellation-analysis"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="cancellation-analysis">
+        <map-reduce>
+            <job-xml>job.properties</job-xml>
+            <configuration>
+                <property>
+                    <name>mapred.mapper.class</name>
+                    <value>com.airline.FlightCancellationJob$CancellationMapper</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.class</name>
+                    <value>com.airline.FlightCancellationJob$CancellationReducer</value>
+                </property>
+                <property>
+                    <name>mapred.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapred.output.value.class</name>
+                    <value>org.apache.hadoop.io.IntWritable</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>${inputDir}</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>${outputDir}/cancellation-analysis</value>
+                </property>
+            </configuration>
+        </map-reduce>
+        <ok to="process-results"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="process-results">
+        <java>
+            <job-xml>job.properties</job-xml>
+            <main-class>com.airline.ResultProcessor</main-class>
+            <arg>${outputDir}/airline-analysis</arg>
+            <arg>${outputDir}/taxi-analysis</arg>
+            <arg>${outputDir}/cancellation-analysis</arg>
+            <arg>${outputDir}/final-results</arg>
+            <capture-output/>
+        </java>
+        <ok to="end"/>
+        <error to="fail"/>
+    </action>
+
+    <kill name="fail">
+        <message>Workflow failed, error message [${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>
