@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <workflow-app xmlns="uri:oozie:workflow:0.4" name="airline-analysis-workflow">
     <start to="airline-analysis"/>
-    
+
     <action name="airline-analysis">
         <map-reduce>
             <job-tracker>${jobTracker}</job-tracker>
@@ -10,20 +11,40 @@
             </prepare>
             <configuration>
                 <property>
-                    <name>mapred.mapper.class</name>
+                    <name>mapred.job.queue.name</name>
+                    <value>default</value>
+                </property>
+                <property>
+                    <name>mapred.mapper.new-api</name>
+                    <value>true</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.new-api</name>
+                    <value>true</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.map.class</name>
                     <value>com.airline.AirlineOnTimeJob$AirlineMapper</value>
                 </property>
                 <property>
-                    <name>mapred.reducer.class</name>
+                    <name>mapreduce.job.reduce.class</name>
                     <value>com.airline.AirlineOnTimeJob$AirlineReducer</value>
                 </property>
                 <property>
-                    <name>mapred.output.key.class</name>
+                    <name>mapreduce.job.output.key.class</name>
                     <value>org.apache.hadoop.io.Text</value>
                 </property>
                 <property>
-                    <name>mapred.output.value.class</name>
+                    <name>mapreduce.job.output.value.class</name>
                     <value>org.apache.hadoop.io.DoubleWritable</value>
+                </property>
+                <property>
+                    <name>mapreduce.map.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapreduce.map.output.value.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
                 </property>
                 <property>
                     <name>mapred.input.dir</name>
@@ -33,14 +54,27 @@
                     <name>mapred.output.dir</name>
                     <value>${outputDir}/airline-analysis</value>
                 </property>
+                <property>
+                    <name>mapreduce.job.reduces</name>
+                    <value>1</value>
+                </property>
+                <property>
+                    <name>oozie.libpath</name>
+                    <value>${nameNode}/user/ubuntu/share/lib</value>
+                </property>
+                <property>
+                    <name>oozie.action.sharelib.for.map-reduce</name>
+                    <value>mapreduce-streaming</value>
+                </property>
             </configuration>
+            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
         </map-reduce>
         <ok to="end"/>
         <error to="fail"/>
     </action>
-    
+
     <kill name="fail">
-        <message>Workflow failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+        <message>Workflow failed, error message [${wf:errorMessage(wf:lastErrorNode())}]</message>
     </kill>
     <end name="end"/>
 </workflow-app>
