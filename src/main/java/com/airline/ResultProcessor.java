@@ -51,128 +51,150 @@ public class ResultProcessor {
     private static Map<String, Double> readAirlineOnTimeData(FileSystem fs, String inputDir) throws Exception {
         Map<String, Double> airlineMap = new HashMap<>();
         
+        System.out.println("Starting to read airline on-time data from: " + inputDir);
+        
         // Read all part files in the output directory
         FileStatus[] files = fs.listStatus(new Path(inputDir));
         for (FileStatus file : files) {
             if (file.getPath().getName().startsWith("part-")) {
+                System.out.println("Processing file: " + file.getPath().getName());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(file.getPath())));
                 String line;
+                int lineCount = 0;
                 while ((line = reader.readLine()) != null) {
+                    lineCount++;
+                    System.out.println("Line " + lineCount + ": " + line);
                     try {
-                        // Look for the last floating point number in the line
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 2) {
-                            // The last part should be the value
-                            String valueStr = parts[parts.length - 1];
-                            double value = Double.parseDouble(valueStr);
+                        // Find the last tab or space in the line
+                        int lastWhitespace = line.lastIndexOf('\t');
+                        if (lastWhitespace == -1) {
+                            lastWhitespace = line.lastIndexOf(' ');
+                        }
+                        
+                        if (lastWhitespace > 0) {
+                            // Everything before the last whitespace is the airline code
+                            String airline = line.substring(0, lastWhitespace).trim();
+                            // Everything after the last whitespace is the probability value
+                            String valueStr = line.substring(lastWhitespace).trim();
                             
-                            // Everything before the value is the airline code
-                            StringBuilder airlineBuilder = new StringBuilder();
-                            for (int i = 0; i < parts.length - 1; i++) {
-                                if (i > 0) airlineBuilder.append(" ");
-                                airlineBuilder.append(parts[i]);
+                            try {
+                                double probability = Double.parseDouble(valueStr);
+                                airlineMap.put(airline, probability);
+                                System.out.println("Successfully parsed airline: " + airline + " with probability: " + probability);
+                            } catch (NumberFormatException e) {
+                                System.err.println("Warning: Could not parse probability value: " + valueStr + " for airline: " + airline);
                             }
-                            String airline = airlineBuilder.toString().trim();
-                            
-                            airlineMap.put(airline, value);
-                            System.out.println("Processed airline: " + airline + " with value: " + value);
                         }
                     } catch (Exception e) {
-                        System.err.println("Warning: Failed to parse line: " + line + " - " + e.getMessage());
-                        // Continue processing other lines
+                        System.err.println("Warning: Error processing line: " + line + " - " + e.getMessage());
                     }
                 }
                 reader.close();
+                System.out.println("Processed " + lineCount + " lines from airline file.");
             }
         }
         
-        System.out.println("Total airlines processed: " + airlineMap.size());
+        System.out.println("Total airlines collected: " + airlineMap.size());
         return airlineMap;
     }
-
+    
     private static Map<String, Double> readAirportTaxiData(FileSystem fs, String inputDir) throws Exception {
         Map<String, Double> airportMap = new HashMap<>();
+        
+        System.out.println("Starting to read airport taxi time data from: " + inputDir);
         
         // Read all part files in the output directory
         FileStatus[] files = fs.listStatus(new Path(inputDir));
         for (FileStatus file : files) {
             if (file.getPath().getName().startsWith("part-")) {
+                System.out.println("Processing file: " + file.getPath().getName());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(file.getPath())));
                 String line;
+                int lineCount = 0;
                 while ((line = reader.readLine()) != null) {
+                    lineCount++;
                     try {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 2) {
-                            // The last part should be the value
-                            String valueStr = parts[parts.length - 1];
-                            double value = Double.parseDouble(valueStr);
-                            
-                            // Everything before the value is the airport info
-                            StringBuilder airportInfoBuilder = new StringBuilder();
-                            for (int i = 0; i < parts.length - 1; i++) {
-                                if (i > 0) airportInfoBuilder.append(" ");
-                                airportInfoBuilder.append(parts[i]);
-                            }
-                            String airportInfo = airportInfoBuilder.toString().trim();
+                        // Find the last tab or space in the line
+                        int lastWhitespace = line.lastIndexOf('\t');
+                        if (lastWhitespace == -1) {
+                            lastWhitespace = line.lastIndexOf(' ');
+                        }
+                        
+                        if (lastWhitespace > 0) {
+                            // Everything before the last whitespace is the airport info
+                            String airportInfo = line.substring(0, lastWhitespace).trim();
+                            // Everything after the last whitespace is the taxi time
+                            String valueStr = line.substring(lastWhitespace).trim();
                             
                             // Only consider total taxi time (both in and out)
                             if (airportInfo.endsWith(",total")) {
                                 String airport = airportInfo.substring(0, airportInfo.indexOf(","));
-                                airportMap.put(airport, value);
-                                System.out.println("Processed airport: " + airport + " with taxi time: " + value);
+                                try {
+                                    double taxiTime = Double.parseDouble(valueStr);
+                                    airportMap.put(airport, taxiTime);
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Warning: Could not parse taxi time: " + valueStr + " for airport: " + airport);
+                                }
                             }
                         }
                     } catch (Exception e) {
-                        System.err.println("Warning: Failed to parse line: " + line + " - " + e.getMessage());
-                        // Continue processing other lines
+                        System.err.println("Warning: Error processing line: " + line + " - " + e.getMessage());
                     }
                 }
                 reader.close();
+                System.out.println("Processed " + lineCount + " lines from taxi time file.");
             }
         }
         
-        System.out.println("Total airports processed: " + airportMap.size());
+        System.out.println("Total airports collected: " + airportMap.size());
         return airportMap;
     }
-
+    
     private static Map<String, Integer> readCancellationData(FileSystem fs, String inputDir) throws Exception {
         Map<String, Integer> cancellationMap = new HashMap<>();
+        
+        System.out.println("Starting to read cancellation data from: " + inputDir);
         
         // Read all part files in the output directory
         FileStatus[] files = fs.listStatus(new Path(inputDir));
         for (FileStatus file : files) {
             if (file.getPath().getName().startsWith("part-")) {
+                System.out.println("Processing file: " + file.getPath().getName());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(file.getPath())));
                 String line;
+                int lineCount = 0;
                 while ((line = reader.readLine()) != null) {
+                    lineCount++;
                     try {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length >= 2) {
-                            // The last part should be the count
-                            String countStr = parts[parts.length - 1];
-                            int count = Integer.parseInt(countStr);
+                        // Find the last tab or space in the line
+                        int lastWhitespace = line.lastIndexOf('\t');
+                        if (lastWhitespace == -1) {
+                            lastWhitespace = line.lastIndexOf(' ');
+                        }
+                        
+                        if (lastWhitespace > 0) {
+                            // Everything before the last whitespace is the cancellation reason
+                            String reason = line.substring(0, lastWhitespace).trim();
+                            // Everything after the last whitespace is the count
+                            String countStr = line.substring(lastWhitespace).trim();
                             
-                            // Everything before the count is the reason
-                            StringBuilder reasonBuilder = new StringBuilder();
-                            for (int i = 0; i < parts.length - 1; i++) {
-                                if (i > 0) reasonBuilder.append(" ");
-                                reasonBuilder.append(parts[i]);
+                            try {
+                                int count = Integer.parseInt(countStr);
+                                cancellationMap.put(reason, count);
+                            } catch (NumberFormatException e) {
+                                System.err.println("Warning: Could not parse count: " + countStr + " for reason: " + reason);
                             }
-                            String reason = reasonBuilder.toString().trim();
-                            
-                            cancellationMap.put(reason, count);
-                            System.out.println("Processed reason: " + reason + " with count: " + count);
                         }
                     } catch (Exception e) {
-                        System.err.println("Warning: Failed to parse line: " + line + " - " + e.getMessage());
-                        // Continue processing other lines
+                        System.err.println("Warning: Error processing line: " + line + " - " + e.getMessage());
                     }
                 }
                 reader.close();
+                System.out.println("Processed " + lineCount + " lines from cancellation file.");
             }
         }
         
-        System.out.println("Total cancellation reasons processed: " + cancellationMap.size());
+        System.out.println("Total cancellation reasons collected: " + cancellationMap.size());
         return cancellationMap;
     }
     
@@ -184,31 +206,6 @@ public class ResultProcessor {
         Path outputPath = new Path(outputDir);
         if (!fs.exists(outputPath)) {
             fs.mkdirs(outputPath);
-        }
-        
-        // Check for empty datasets and provide warnings
-        if (airlineOnTimeMap.isEmpty()) {
-            System.err.println("Warning: No airline on-time data found");
-            // Add some placeholder data to avoid empty results
-            airlineOnTimeMap.put("NO_DATA_FOUND", 0.0);
-            airlineOnTimeMap.put("CHECK_DATA_SOURCE", 0.0);
-            airlineOnTimeMap.put("VERIFY_PROCESSING", 0.0);
-        }
-        
-        if (airportTaxiMap.isEmpty()) {
-            System.err.println("Warning: No airport taxi time data found");
-            // Add some placeholder data to avoid empty results
-            airportTaxiMap.put("NO_DATA_FOUND", 0.0);
-            airportTaxiMap.put("CHECK_DATA_SOURCE", 0.0);
-            airportTaxiMap.put("VERIFY_PROCESSING", 0.0);
-        }
-        
-        if (cancellationMap.isEmpty()) {
-            System.err.println("Warning: No cancellation data found");
-            // Add some placeholder data to avoid empty results
-            cancellationMap.put("NO_DATA_FOUND", 0);
-            cancellationMap.put("CHECK_DATA_SOURCE", 0);
-            cancellationMap.put("VERIFY_PROCESSING", 0);
         }
         
         // Write final results to a file
@@ -255,8 +252,16 @@ public class ResultProcessor {
         // Process airport taxi time data
         writer.write("\n\n=== 3 Airports with Longest and Shortest Average Taxi Time ===\n\n");
         
+        // Filter out airports with zero taxi time (no real data)
+        Map<String, Double> filteredAirportMap = new HashMap<>();
+        for (Map.Entry<String, Double> entry : airportTaxiMap.entrySet()) {
+            if (entry.getValue() > 0.01) { // Consider anything above 0.01 minutes as valid data
+                filteredAirportMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        
         // Sort airports by taxi time
-        List<Map.Entry<String, Double>> sortedAirports = new ArrayList<>(airportTaxiMap.entrySet());
+        List<Map.Entry<String, Double>> sortedAirports = new ArrayList<>(filteredAirportMap.entrySet());
         Collections.sort(sortedAirports, new Comparator<Map.Entry<String, Double>>() {
             @Override
             public int compare(Map.Entry<String, Double> o1, Map.Entry<String, Double> o2) {

@@ -59,7 +59,7 @@
                     <value>1</value>
                 </property>
             </configuration>
-            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+            <file>${nameNode}/user/ubuntu/share/lib-new/airline-analysis-1.0.1-SNAPSHOT.jar#airline-analysis-1.0.1-SNAPSHOT.jar</file>
         </map-reduce>
         <ok to="taxi-analysis"/>
         <error to="fail"/>
@@ -122,7 +122,7 @@
                     <value>1</value>
                 </property>
             </configuration>
-            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+            <file>${nameNode}/user/ubuntu/share/lib-new/airline-analysis-1.0.1-SNAPSHOT.jar#airline-analysis-1.0.1-SNAPSHOT.jar</file>
         </map-reduce>
         <ok to="cancellation-analysis"/>
         <error to="fail"/>
@@ -185,7 +185,7 @@
                     <value>1</value>
                 </property>
             </configuration>
-            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+            <file>${nameNode}/user/ubuntu/share/lib-new/airline-analysis-1.0.1-SNAPSHOT.jar#airline-analysis-1.0.1-SNAPSHOT.jar</file>
         </map-reduce>
         <ok to="process-results"/>
         <error to="fail"/>
@@ -203,7 +203,7 @@
             <arg>${outputDir}/taxi-analysis</arg>
             <arg>${outputDir}/cancellation-analysis</arg>
             <arg>${outputDir}/final-results</arg>
-            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+            <file>${nameNode}/user/ubuntu/share/lib-new/airline-analysis-1.0.1-SNAPSHOT.jar#airline-analysis-1.0.1-SNAPSHOT.jar</file>
         </java>
         <ok to="end"/>
         <error to="fail"/>
