@@ -58,20 +58,38 @@ public class ResultProcessor {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(file.getPath())));
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split("\\s+");
-                    if (parts.length >= 2) {
-                        String airline = parts[0];
-                        double onTimeProbability = Double.parseDouble(parts[1]);
-                        airlineMap.put(airline, onTimeProbability);
+                    try {
+                        // Look for the last floating point number in the line
+                        String[] parts = line.split("\\s+");
+                        if (parts.length >= 2) {
+                            // The last part should be the value
+                            String valueStr = parts[parts.length - 1];
+                            double value = Double.parseDouble(valueStr);
+                            
+                            // Everything before the value is the airline code
+                            StringBuilder airlineBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 1; i++) {
+                                if (i > 0) airlineBuilder.append(" ");
+                                airlineBuilder.append(parts[i]);
+                            }
+                            String airline = airlineBuilder.toString().trim();
+                            
+                            airlineMap.put(airline, value);
+                            System.out.println("Processed airline: " + airline + " with value: " + value);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Warning: Failed to parse line: " + line + " - " + e.getMessage());
+                        // Continue processing other lines
                     }
                 }
                 reader.close();
             }
         }
         
+        System.out.println("Total airlines processed: " + airlineMap.size());
         return airlineMap;
     }
-    
+
     private static Map<String, Double> readAirportTaxiData(FileSystem fs, String inputDir) throws Exception {
         Map<String, Double> airportMap = new HashMap<>();
         
@@ -82,25 +100,41 @@ public class ResultProcessor {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(file.getPath())));
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split("\\s+");
-                    if (parts.length >= 2) {
-                        String airportInfo = parts[0];
-                        double taxiTime = Double.parseDouble(parts[1]);
-                        
-                        // Only consider total taxi time (both in and out)
-                        if (airportInfo.endsWith(",total")) {
-                            String airport = airportInfo.substring(0, airportInfo.indexOf(","));
-                            airportMap.put(airport, taxiTime);
+                    try {
+                        String[] parts = line.split("\\s+");
+                        if (parts.length >= 2) {
+                            // The last part should be the value
+                            String valueStr = parts[parts.length - 1];
+                            double value = Double.parseDouble(valueStr);
+                            
+                            // Everything before the value is the airport info
+                            StringBuilder airportInfoBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 1; i++) {
+                                if (i > 0) airportInfoBuilder.append(" ");
+                                airportInfoBuilder.append(parts[i]);
+                            }
+                            String airportInfo = airportInfoBuilder.toString().trim();
+                            
+                            // Only consider total taxi time (both in and out)
+                            if (airportInfo.endsWith(",total")) {
+                                String airport = airportInfo.substring(0, airportInfo.indexOf(","));
+                                airportMap.put(airport, value);
+                                System.out.println("Processed airport: " + airport + " with taxi time: " + value);
+                            }
                         }
+                    } catch (Exception e) {
+                        System.err.println("Warning: Failed to parse line: " + line + " - " + e.getMessage());
+                        // Continue processing other lines
                     }
                 }
                 reader.close();
             }
         }
         
+        System.out.println("Total airports processed: " + airportMap.size());
         return airportMap;
     }
-    
+
     private static Map<String, Integer> readCancellationData(FileSystem fs, String inputDir) throws Exception {
         Map<String, Integer> cancellationMap = new HashMap<>();
         
@@ -111,24 +145,34 @@ public class ResultProcessor {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(file.getPath())));
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split("\\s+");
-                    if (parts.length >= 2) {
-                        StringBuilder reasonBuilder = new StringBuilder();
-                        for (int i = 0; i < parts.length - 1; i++) {
-                            if (i > 0) {
-                                reasonBuilder.append(" ");
+                    try {
+                        String[] parts = line.split("\\s+");
+                        if (parts.length >= 2) {
+                            // The last part should be the count
+                            String countStr = parts[parts.length - 1];
+                            int count = Integer.parseInt(countStr);
+                            
+                            // Everything before the count is the reason
+                            StringBuilder reasonBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 1; i++) {
+                                if (i > 0) reasonBuilder.append(" ");
+                                reasonBuilder.append(parts[i]);
                             }
-                            reasonBuilder.append(parts[i]);
+                            String reason = reasonBuilder.toString().trim();
+                            
+                            cancellationMap.put(reason, count);
+                            System.out.println("Processed reason: " + reason + " with count: " + count);
                         }
-                        String reason = reasonBuilder.toString();
-                        int count = Integer.parseInt(parts[parts.length - 1]);
-                        cancellationMap.put(reason, count);
+                    } catch (Exception e) {
+                        System.err.println("Warning: Failed to parse line: " + line + " - " + e.getMessage());
+                        // Continue processing other lines
                     }
                 }
                 reader.close();
             }
         }
         
+        System.out.println("Total cancellation reasons processed: " + cancellationMap.size());
         return cancellationMap;
     }
     
@@ -140,6 +184,31 @@ public class ResultProcessor {
         Path outputPath = new Path(outputDir);
         if (!fs.exists(outputPath)) {
             fs.mkdirs(outputPath);
+        }
+        
+        // Check for empty datasets and provide warnings
+        if (airlineOnTimeMap.isEmpty()) {
+            System.err.println("Warning: No airline on-time data found");
+            // Add some placeholder data to avoid empty results
+            airlineOnTimeMap.put("NO_DATA_FOUND", 0.0);
+            airlineOnTimeMap.put("CHECK_DATA_SOURCE", 0.0);
+            airlineOnTimeMap.put("VERIFY_PROCESSING", 0.0);
+        }
+        
+        if (airportTaxiMap.isEmpty()) {
+            System.err.println("Warning: No airport taxi time data found");
+            // Add some placeholder data to avoid empty results
+            airportTaxiMap.put("NO_DATA_FOUND", 0.0);
+            airportTaxiMap.put("CHECK_DATA_SOURCE", 0.0);
+            airportTaxiMap.put("VERIFY_PROCESSING", 0.0);
+        }
+        
+        if (cancellationMap.isEmpty()) {
+            System.err.println("Warning: No cancellation data found");
+            // Add some placeholder data to avoid empty results
+            cancellationMap.put("NO_DATA_FOUND", 0);
+            cancellationMap.put("CHECK_DATA_SOURCE", 0);
+            cancellationMap.put("VERIFY_PROCESSING", 0);
         }
         
         // Write final results to a file

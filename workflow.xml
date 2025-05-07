@@ -58,17 +58,153 @@
                     <name>mapreduce.job.reduces</name>
                     <value>1</value>
                 </property>
+            </configuration>
+            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+        </map-reduce>
+        <ok to="taxi-analysis"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="taxi-analysis">
+        <map-reduce>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${outputDir}/taxi-analysis"/>
+            </prepare>
+            <configuration>
                 <property>
-                    <name>oozie.libpath</name>
-                    <value>${nameNode}/user/ubuntu/share/lib</value>
+                    <name>mapred.job.queue.name</name>
+                    <value>default</value>
                 </property>
                 <property>
-                    <name>oozie.action.sharelib.for.map-reduce</name>
-                    <value>mapreduce-streaming</value>
+                    <name>mapred.mapper.new-api</name>
+                    <value>true</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.new-api</name>
+                    <value>true</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.map.class</name>
+                    <value>com.airline.AirportTaxiTimeJob$TaxiTimeMapper</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.reduce.class</name>
+                    <value>com.airline.AirportTaxiTimeJob$TaxiTimeReducer</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.output.value.class</name>
+                    <value>org.apache.hadoop.io.DoubleWritable</value>
+                </property>
+                <property>
+                    <name>mapreduce.map.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapreduce.map.output.value.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>${inputDir}</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>${outputDir}/taxi-analysis</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.reduces</name>
+                    <value>1</value>
                 </property>
             </configuration>
             <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
         </map-reduce>
+        <ok to="cancellation-analysis"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="cancellation-analysis">
+        <map-reduce>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${outputDir}/cancellation-analysis"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>default</value>
+                </property>
+                <property>
+                    <name>mapred.mapper.new-api</name>
+                    <value>true</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.new-api</name>
+                    <value>true</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.map.class</name>
+                    <value>com.airline.FlightCancellationJob$CancellationMapper</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.reduce.class</name>
+                    <value>com.airline.FlightCancellationJob$CancellationReducer</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.output.value.class</name>
+                    <value>org.apache.hadoop.io.IntWritable</value>
+                </property>
+                <property>
+                    <name>mapreduce.map.output.key.class</name>
+                    <value>org.apache.hadoop.io.Text</value>
+                </property>
+                <property>
+                    <name>mapreduce.map.output.value.class</name>
+                    <value>org.apache.hadoop.io.IntWritable</value>
+                </property>
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>${inputDir}</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>${outputDir}/cancellation-analysis</value>
+                </property>
+                <property>
+                    <name>mapreduce.job.reduces</name>
+                    <value>1</value>
+                </property>
+            </configuration>
+            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+        </map-reduce>
+        <ok to="process-results"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="process-results">
+        <java>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                <delete path="${outputDir}/final-results"/>
+            </prepare>
+            <main-class>com.airline.ResultProcessor</main-class>
+            <arg>${outputDir}/airline-analysis</arg>
+            <arg>${outputDir}/taxi-analysis</arg>
+            <arg>${outputDir}/cancellation-analysis</arg>
+            <arg>${outputDir}/final-results</arg>
+            <file>${nameNode}/user/ubuntu/share/lib/airline-analysis-1.0-SNAPSHOT.jar#airline-analysis-1.0-SNAPSHOT.jar</file>
+        </java>
         <ok to="end"/>
         <error to="fail"/>
     </action>
